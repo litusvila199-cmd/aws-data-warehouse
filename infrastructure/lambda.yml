@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  AWS Lambda function configuration for the AWS Data Warehouse project.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: aws-data-warehouse
+
+  LambdaRuntime:
+    Type: String
+    Default: python3.14
+
+  DeploymentBucketName:
+    Type: String
+    Default: carles-data-lake
+
+  DeploymentPackageKey:
+    Type: String
+    Default: aws-data-warehouse/deployment/lambda-package.zip  
+
+Resources:
+  DataProcessingFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-processor"
+      Runtime: !Ref LambdaRuntime
+      Handler: handler.lambda_handler
+      Role: !ImportValue aws-data-warehouse-lambda-role-arn    
+      Code:
+        S3Bucket: !Ref DeploymentBucketName
+        S3Key: !Ref DeploymentPackageKey
+      MemorySize: 2048
+      Timeout: 300
+      Architectures:
+        - x86_64 
+      Environment:
+        Variables:
+          DATA_LAKE_BUCKET: !Ref DeploymentBucketName
+          RAW_PREFIX: aws-data-warehouse/raw/
+          PROCESSED_PREFIX: aws-data-warehouse/processed/
+          REDSHIFT_DATABASE: warehouse
+          REDSHIFT_WORKGROUP: !Sub "${ProjectName}-workgroup"   

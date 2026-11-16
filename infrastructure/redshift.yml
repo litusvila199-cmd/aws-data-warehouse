@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Amazon Redshift Serverless configuration for the AWS Data Warehouse project.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: aws-data-warehouse
+
+  DatabaseName:
+    Type: String
+    Default: warehouse
+
+  BaseCapacity:
+    Type: Number
+    Default: 8
+
+Resources:
+  RedshiftNamespace:
+    Type: AWS::RedshiftServerless::Namespace
+    Properties:
+      NamespaceName: !Sub "${ProjectName}-namespace"
+      DbName: !Ref DatabaseName
+      IamRoles:
+        - !ImportValue aws-data-warehouse-redshift-s3-role-arn
+  RedshiftWorkgroup:
+    Type: AWS::RedshiftServerless::Workgroup
+    Properties:
+      WorkgroupName: !Sub "${ProjectName}-workgroup"
+      NamespaceName: !Ref RedshiftNamespace
+      BaseCapacity: !Ref BaseCapacity
+      PubliclyAccessible: false
+      SubnetIds:
+        - subnet-0310e93cc79d088e0
+        - subnet-058036cf401891040
+        - subnet-05610fd9c3c8272b2
+
+      SecurityGroupIds:
+        - sg-0b7d184fe95d8a558    
