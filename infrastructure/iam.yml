@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  IAM roles and policies for the AWS Data Warehouse project.
+
+Parameters:
+  DataLakeBucketName:
+    Type: String
+    Default: carles-data-lake
+
+  ProjectPrefix:
+    Type: String
+    Default: aws-data-warehouse
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: aws-data-warehouse-lambda-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole 
+
+
+  LambdaS3Policy:
+    Type: AWS::IAM::Policy
+    Properties: 
+      PolicyName: aws-data-warehouse-s3-access
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource:
+              - !Sub "arn:aws:s3:::${DataLakeBucketName}/${ProjectPrefix}/raw/*"
+
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource:
+              - !Sub "arn:aws:s3:::${DataLakeBucketName}/${ProjectPrefix}/processed/*"  
+
+
+  LambdaCloudWatchPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: aws-data-warehouse-cloudwatch-access
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: "*" 
+
+
+  LambdaRedshiftPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: aws-data-warehouse-redshift-access
+      Roles:
+        - !Ref LambdaExecutionRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - redshift-data:ExecuteStatement
+              - redshift-data:DescribeStatement
+              - redshift-data:GetStatementResult
+              - redshift-serverless:GetCredentials
+            Resource: "*"                               
+
+
+  RedshiftS3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: aws-data-warehouse-redshift-s3-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - redshift-serverless.amazonaws.com
+            Action:
+              - sts:AssumeRole  
+
+  RedshiftS3Policy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: aws-data-warehouse-redshift-s3-access
+      Roles:
+        - !Ref RedshiftS3Role
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource:
+              - !Sub "arn:aws:s3:::${DataLakeBucketName}/${ProjectPrefix}/processed/*"
+
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource:
+              - !Sub "arn:aws:s3:::${DataLakeBucketName}"
+            Condition:
+              StringLike:
+                s3:prefix:
+                  - !Sub "${ProjectPrefix}/processed/*"                    
+                              
+ 
+
+Outputs:
+  LambdaExecutionRoleArn:
+    Description: ARN of the Lambda execution role.
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: aws-data-warehouse-lambda-role-arn
+  RedshiftS3RoleArn:
+    Description: ARN of the Redshift S3 access role.
+    Value: !GetAtt RedshiftS3Role.Arn
+    Export:
+      Name: aws-data-warehouse-redshift-s3-role-arn    
