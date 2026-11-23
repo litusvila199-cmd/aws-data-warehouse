@@ -8,6 +8,7 @@ venv/
 
 # Environment variables
 .env
+.env.*
 
 # IDE
 .vscode/
@@ -18,3 +19,9 @@ venv/
 
 # Logs
 *.log
+
+# Deployment packages
+*.zip
+
+# Build artifacts
+build/
