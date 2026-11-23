@@ -26,7 +26,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${ProjectName}-processor"
       Runtime: !Ref LambdaRuntime
-      Handler: handler.lambda_handler
+      Handler: src.lambda_function.handler.lambda_handler
       Role: !ImportValue aws-data-warehouse-lambda-role-arn    
       Code:
         S3Bucket: !Ref DeploymentBucketName
